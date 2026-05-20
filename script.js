@@ -1,641 +1,680 @@
 /* ============================================================
-   업무 종합 대시보드 – script.js
+   업무 종합 대시보드 – script.js (v2)
    제작: 민승환 (202101308)
    ============================================================ */
 
-/* ──────────────────────────────────────────
-   유틸: 날짜 포매팅
-────────────────────────────────────────── */
-function toDateStr(date) {
-  // YYYY-MM-DD 형태로 변환
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+/* ── 유틸 ── */
+function toStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-
-function formatKorDate(dateStr) {
-  const [y, m, d] = dateStr.split("-");
-  const days = ["일", "월", "화", "수", "목", "금", "토"];
-  const dayIdx = new Date(dateStr).getDay();
-  return `${y}년 ${m}월 ${d}일 (${days[dayIdx]})`;
+function addDays(n) {
+  const d = new Date(); d.setDate(d.getDate()+n); return toStr(d);
 }
-
-// 오늘 날짜 문자열
-const TODAY_STR = toDateStr(new Date());
-
-/* ──────────────────────────────────────────
-   1. 실시간 날짜 / 시간 표시
-────────────────────────────────────────── */
-function updateClock() {
-  const now = new Date();
-  document.getElementById("todayDate").textContent = formatKorDate(TODAY_STR);
-
-  const h = String(now.getHours()).padStart(2, "0");
-  const m = String(now.getMinutes()).padStart(2, "0");
-  const s = String(now.getSeconds()).padStart(2, "0");
-  document.getElementById("todayTime").textContent = `${h}:${m}:${s}`;
+function diffDays(ds) {
+  return Math.round((new Date(ds) - new Date(TODAY)) / 86400000);
 }
-updateClock();
-setInterval(updateClock, 1000);
+function korDate(ds) {
+  const [y,m,d] = ds.split('-');
+  const day = ['일','월','화','수','목','금','토'][new Date(ds).getDay()];
+  return `${y}년 ${m}월 ${d}일 (${day})`;
+}
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function $(id) { return document.getElementById(id); }
 
-/* ──────────────────────────────────────────
-   2. D-Day 관리 데이터 및 렌더
-────────────────────────────────────────── */
+const TODAY = toStr(new Date());
 
-// 예시 D-Day 업무 데이터 (마감일은 오늘 기준 상대값으로 설정)
-function buildDdayData() {
-  const addDays = (n) => {
-    const d = new Date();
-    d.setDate(d.getDate() + n);
-    return toDateStr(d);
-  };
+/* ── 실시간 시계 ── */
+function tick() {
+  const n = new Date();
+  const pad = v => String(v).padStart(2,'0');
+  $('tbClock').textContent = `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+  $('tbDate').textContent  = korDate(TODAY);
+}
+tick();
+setInterval(tick, 1000);
 
+/* ── D-Day 데이터 ── */
+const DDAY_KEY = 'ddayData_v2';
+
+function defaultDday() {
   return [
-    {
-      id: 1,
-      name: "기획안 초안 작성",
-      deadline: addDays(2),
-      importance: "high",
-      status: "progress",
-    },
-    {
-      id: 2,
-      name: "발표 자료 제작",
-      deadline: addDays(5),
-      importance: "high",
-      status: "waiting",
-    },
-    {
-      id: 3,
-      name: "데이터 분석 보고서 정리",
-      deadline: addDays(0),   // 오늘 마감
-      importance: "medium",
-      status: "progress",
-    },
-    {
-      id: 4,
-      name: "팀 회의 준비",
-      deadline: addDays(-1),  // 어제 (이미 지남)
-      importance: "low",
-      status: "done",
-    },
-    {
-      id: 5,
-      name: "최종 제출 파일 압축",
-      deadline: addDays(7),
-      importance: "medium",
-      status: "waiting",
-    },
+    { id:1, name:'기획안 초안 작성',       deadline:addDays(2),  importance:'high',   status:'progress' },
+    { id:2, name:'발표 자료 제작',          deadline:addDays(5),  importance:'high',   status:'waiting'  },
+    { id:3, name:'데이터 분석 보고서 정리', deadline:addDays(0),  importance:'medium', status:'progress' },
+    { id:4, name:'팀 회의 준비',            deadline:addDays(-1), importance:'low',    status:'done'     },
+    { id:5, name:'최종 제출 파일 압축',     deadline:addDays(7),  importance:'medium', status:'waiting'  },
   ];
 }
 
-// localStorage에서 D-Day 데이터 로드 (없으면 기본값 사용)
-function loadDdayData() {
-  const stored = localStorage.getItem("ddayTasks");
-  if (stored) return JSON.parse(stored);
-  const defaults = buildDdayData();
-  localStorage.setItem("ddayTasks", JSON.stringify(defaults));
-  return defaults;
+function loadDday() {
+  try {
+    const s = localStorage.getItem(DDAY_KEY);
+    if (s) return JSON.parse(s);
+    const d = defaultDday();
+    localStorage.setItem(DDAY_KEY, JSON.stringify(d));
+    return d;
+  } catch(e) { return defaultDday(); }
 }
 
-function saveDdayData(data) {
-  localStorage.setItem("ddayTasks", JSON.stringify(data));
+/* ── 오늘 업무 데이터 ── */
+const TASK_KEY = `tasks_${TODAY}`;
+
+function defaultTasks() {
+  const now = Date.now();
+  return [
+    { id: now-2, text:'이메일 확인 및 회신',   done:false },
+    { id: now-1, text:'오전 스크럼 미팅 참석', done:false },
+    { id: now,   text:'기획안 피드백 반영',    done:true  },
+  ];
 }
 
-// D-Day 숫자 계산
-function calcDday(deadlineStr) {
-  const today = new Date(TODAY_STR);
-  const dl    = new Date(deadlineStr);
-  const diff  = Math.round((dl - today) / (1000 * 60 * 60 * 24));
-  return diff;
+function loadTasks() {
+  try {
+    const s = localStorage.getItem(TASK_KEY);
+    if (s) return JSON.parse(s);
+    const d = defaultTasks();
+    localStorage.setItem(TASK_KEY, JSON.stringify(d));
+    return d;
+  } catch(e) { return defaultTasks(); }
 }
 
-function ddayText(diff) {
-  if (diff === 0)  return "D-Day";
-  if (diff > 0)    return `D-${diff}`;
-  return `D+${Math.abs(diff)}`;
+function saveTasks(t) {
+  try { localStorage.setItem(TASK_KEY, JSON.stringify(t)); } catch(e) {}
 }
 
-function ddayColorClass(diff) {
-  if (diff === 0)        return "dday-today";
-  if (diff < 0)          return "dday-past";
-  if (diff <= 3)         return "dday-near";
-  return "dday-upcoming";
+/* ── 통계 계산 ── */
+function computeStats() {
+  const dday  = loadDday();
+  const tasks = loadTasks();
+
+  const ddayItems  = dday.map(t => ({ status: t.status }));
+  const taskItems  = tasks.map(t => ({ status: t.done ? 'done' : 'progress' }));
+  const all        = [...ddayItems, ...taskItems];
+
+  const total    = all.length;
+  const done     = all.filter(i => i.status === 'done').length;
+  const inProg   = all.filter(i => i.status === 'progress').length;
+  const waiting  = all.filter(i => i.status === 'waiting').length;
+  const urgent   = dday.filter(t => {
+    const d = diffDays(t.deadline);
+    return d >= 0 && d <= 3 && t.status !== 'done';
+  }).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  return { total, done, inProg, waiting, urgent, pct };
 }
 
-function importanceLabel(imp) {
-  const map = { high: "높음", medium: "보통", low: "낮음" };
-  return map[imp] || imp;
+/* ── 통계 렌더 ── */
+function renderStats() {
+  const s = computeStats();
+
+  $('stTotal').textContent   = s.total;
+  $('stDone').textContent    = s.done;
+  $('stProg').textContent    = s.inProg;
+  $('stUrgent').textContent  = s.urgent;
+  $('stDoneBadge').textContent = `완료율 ${s.pct}%`;
+
+  // 사이드바 카운터
+  $('sbTotal').textContent  = s.total;
+  $('sbDone').textContent   = s.done;
+  $('sbUrgent').textContent = s.urgent;
+
+  // 우측 패널
+  $('overallPct').textContent = `${s.pct}%`;
+  $('donutPct').textContent   = `${s.pct}%`;
+
+  // 상태 칩
+  $('statusChips').innerHTML = `
+    <div class="chip chip-w">⏳ 대기 ${s.waiting}</div>
+    <div class="chip chip-p">🔄 진행 ${s.inProg}</div>
+    <div class="chip chip-d">✅ 완료 ${s.done}</div>
+  `;
+
+  updateProductivity();
+  drawAllCharts(s);
 }
 
-function importanceClass(imp) {
-  const map = { high: "imp-high", medium: "imp-medium", low: "imp-low" };
-  return map[imp] || "";
-}
-
-function statusLabel(s) {
-  const map = { waiting: "대기 중", progress: "진행 중", done: "완료" };
-  return map[s] || s;
-}
-
-function statusClass(s) {
-  const map = { waiting: "status-waiting", progress: "status-progress", done: "status-done" };
-  return map[s] || "";
-}
-
+/* ── D-Day 렌더 ── */
 function renderDday() {
-  const data  = loadDdayData();
-  const grid  = document.getElementById("ddayGrid");
-  const count = document.getElementById("ddayCount");
+  const data = loadDday();
+  const grid = $('ddayGrid');
+  const pill = $('ddayPill');
+  if (!grid || !pill) return;
 
-  count.textContent = `${data.length}건`;
-  grid.innerHTML = "";
+  pill.textContent = `${data.length}건`;
+  grid.innerHTML   = '';
 
-  data.forEach((task) => {
-    const diff    = calcDday(task.deadline);
-    const numTxt  = ddayText(diff);
-    const numCls  = ddayColorClass(diff);
-    const impCls  = importanceClass(task.importance);
-    const stCls   = statusClass(task.status);
+  const impCls = { high:'dd-high', medium:'dd-medium', low:'dd-low' };
+  const impLbl = { high:'높음', medium:'보통', low:'낮음' };
+  const stCls  = { waiting:'st-w', progress:'st-p', done:'st-d' };
+  const stLbl  = { waiting:'대기 중', progress:'진행 중', done:'완료' };
 
-    const card = document.createElement("div");
-    card.className = "dday-card";
-    card.innerHTML = `
-      <div class="dday-label ${impCls}">중요도 ${importanceLabel(task.importance)}</div>
-      <div class="dday-task-name">${task.name}</div>
-      <div class="dday-deadline">마감: ${task.deadline}</div>
-      <div class="dday-number ${numCls}">${numTxt}</div>
-      <span class="dday-status-pill ${stCls}">${statusLabel(task.status)}</span>
+  data.forEach(t => {
+    const diff   = diffDays(t.deadline);
+    const numTxt = diff === 0 ? 'D-Day' : diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`;
+    const numCls = diff === 0 ? 'dday-today' : diff < 0 ? 'dday-past' : diff <= 3 ? 'dday-near' : 'dday-upcoming';
+
+    const el = document.createElement('div');
+    el.className = 'dd-card';
+    el.innerHTML = `
+      <span class="dd-imp ${impCls[t.importance] || 'dd-medium'}">중요도 ${impLbl[t.importance] || '보통'}</span>
+      <div class="dd-name">${esc(t.name)}</div>
+      <div class="dd-deadline">마감: ${t.deadline}</div>
+      <div class="dd-num ${numCls}">${numTxt}</div>
+      <span class="dd-st ${stCls[t.status] || 'st-w'}">${stLbl[t.status] || '대기 중'}</span>
     `;
-    grid.appendChild(card);
+    grid.appendChild(el);
   });
 }
 
-renderDday();
+/* ── 오늘 업무 렌더 ── */
+function renderTasks() {
+  const tasks = loadTasks();
+  const list  = $('taskList');
+  if (!list) return;
 
-/* ──────────────────────────────────────────
-   3. 오늘의 업무 (추가 / 완료 / 삭제)
-────────────────────────────────────────── */
-const TODAY_TASKS_KEY = `todayTasks_${TODAY_STR}`;
+  const done = tasks.filter(t => t.done).length;
+  const pct  = tasks.length ? Math.round(done / tasks.length * 100) : 0;
 
-function loadTodayTasks() {
-  const stored = localStorage.getItem(TODAY_TASKS_KEY);
-  if (stored) return JSON.parse(stored);
-  // 기본 오늘의 업무 3개
-  return [
-    { id: Date.now() + 1, text: "이메일 확인 및 회신",   done: false },
-    { id: Date.now() + 2, text: "오전 스크럼 미팅 참석", done: false },
-    { id: Date.now() + 3, text: "기획안 피드백 반영",    done: true  },
-  ];
-}
+  $('compPill').textContent    = `${pct}%`;
+  $('todayBar').style.width    = `${pct}%`;
 
-function saveTodayTasks(tasks) {
-  localStorage.setItem(TODAY_TASKS_KEY, JSON.stringify(tasks));
-}
+  list.innerHTML = '';
 
-function renderTodayTasks() {
-  const tasks    = loadTodayTasks();
-  const list     = document.getElementById("taskList");
-  const total    = tasks.length;
-  const done     = tasks.filter((t) => t.done).length;
-  const pct      = total ? Math.round((done / total) * 100) : 0;
-
-  document.getElementById("completionRate").textContent = `완료율 ${pct}%`;
-  document.getElementById("todayProgressBar").style.width = `${pct}%`;
-
-  list.innerHTML = "";
-  if (tasks.length === 0) {
-    list.innerHTML = `<li class="task-empty">등록된 업무가 없습니다. 위에서 추가해보세요.</li>`;
-    updateProductivityScore();
+  if (!tasks.length) {
+    list.innerHTML = `<li class="t-empty">업무가 없습니다. 위에서 추가해보세요!</li>`;
     return;
   }
 
-  tasks.forEach((task) => {
-    const li = document.createElement("li");
-    li.className = `task-item${task.done ? " completed" : ""}`;
+  tasks.forEach(task => {
+    const li = document.createElement('li');
+    li.className = `titem${task.done ? ' done' : ''}`;
     li.innerHTML = `
-      <input type="checkbox" class="task-checkbox" data-id="${task.id}" ${task.done ? "checked" : ""} />
-      <span class="task-text">${escapeHtml(task.text)}</span>
-      <button class="task-delete" data-id="${task.id}" title="삭제">✕</button>
+      <input type="checkbox" class="t-chk" data-id="${task.id}" ${task.done ? 'checked' : ''} />
+      <span class="t-txt">${esc(task.text)}</span>
+      <button class="t-del" data-id="${task.id}" title="삭제">✕</button>
     `;
     list.appendChild(li);
   });
 
-  // 체크박스 이벤트
-  list.querySelectorAll(".task-checkbox").forEach((cb) => {
-    cb.addEventListener("change", () => {
-      const tasks = loadTodayTasks();
-      const target = tasks.find((t) => t.id == cb.dataset.id);
-      if (target) target.done = cb.checked;
-      saveTodayTasks(tasks);
-      renderTodayTasks();
-      renderProgressCards();
-      updateProductivityScore();
+  // 체크박스
+  list.querySelectorAll('.t-chk').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const ts = loadTasks();
+      const t  = ts.find(x => x.id == cb.dataset.id);
+      if (t) t.done = cb.checked;
+      saveTasks(ts);
+      renderTasks();
+      renderStats();
+      renderPriority();
     });
   });
 
-  // 삭제 버튼 이벤트
-  list.querySelectorAll(".task-delete").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tasks  = loadTodayTasks();
-      const newArr = tasks.filter((t) => t.id != btn.dataset.id);
-      saveTodayTasks(newArr);
-      renderTodayTasks();
-      renderProgressCards();
-      renderPriorityTop3();
-      updateProductivityScore();
+  // 삭제
+  list.querySelectorAll('.t-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ts = loadTasks().filter(x => x.id != btn.dataset.id);
+      saveTasks(ts);
+      renderTasks();
+      renderStats();
+      renderPriority();
     });
   });
-
-  updateProductivityScore();
 }
 
-// 업무 추가 버튼
-document.getElementById("addTaskBtn").addEventListener("click", addTask);
-document.getElementById("taskInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addTask();
-});
+// 업무 추가
+$('addTaskBtn').addEventListener('click', addTask);
+$('taskInput').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 
 function addTask() {
-  const input = document.getElementById("taskInput");
-  const text  = input.value.trim();
+  const inp  = $('taskInput');
+  const text = inp.value.trim();
   if (!text) return;
-
-  const tasks = loadTodayTasks();
-  tasks.push({ id: Date.now(), text, done: false });
-  saveTodayTasks(tasks);
-  input.value = "";
-  renderTodayTasks();
-  renderProgressCards();
-  renderPriorityTop3();
-  updateProductivityScore();
+  const ts = loadTasks();
+  ts.push({ id: Date.now(), text, done: false });
+  saveTasks(ts);
+  inp.value = '';
+  renderTasks();
+  renderStats();
+  renderPriority();
 }
 
-// HTML 이스케이프 (XSS 방지)
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+/* ── 우선순위 TOP 3 ── */
+function renderPriority() {
+  const tasks = loadTasks().filter(t => !t.done);
+  const el    = $('priorityList');
+  if (!el) return;
 
-renderTodayTasks();
-
-/* ──────────────────────────────────────────
-   4. 진행 현황 카드 & 필터
-────────────────────────────────────────── */
-let currentFilter = "all";
-
-function renderProgressCards() {
-  const ddayTasks  = loadDdayData();
-  const todayTasks = loadTodayTasks();
-
-  // 전체 항목: D-Day 업무 + 오늘 업무 합산
-  const allItems = [
-    ...ddayTasks.map((t) => ({
-      name:   t.name,
-      status: t.status,
-      source: "dday",
-    })),
-    ...todayTasks.map((t) => ({
-      name:   t.text,
-      status: t.done ? "done" : "progress",
-      source: "today",
-    })),
-  ];
-
-  const total    = allItems.length;
-  const doneCnt  = allItems.filter((i) => i.status === "done").length;
-  const progCnt  = allItems.filter((i) => i.status === "progress").length;
-  const waitCnt  = allItems.filter((i) => i.status === "waiting").length;
-  const pct      = total ? Math.round((doneCnt / total) * 100) : 0;
-
-  // 전체 진행률 바
-  document.getElementById("overallBar").style.width = `${pct}%`;
-  document.getElementById("overallPct").textContent = `${pct}%`;
-
-  // 상태 요약 칩
-  document.getElementById("statusSummary").innerHTML = `
-    <div class="status-chip chip-waiting">⏳ 대기 중 ${waitCnt}</div>
-    <div class="status-chip chip-progress">🔄 진행 중 ${progCnt}</div>
-    <div class="status-chip chip-done">✅ 완료 ${doneCnt}</div>
-  `;
-
-  // 카드 렌더
-  const container = document.getElementById("progressCards");
-  container.innerHTML = "";
-
-  allItems.forEach((item) => {
-    const div = document.createElement("div");
-    div.className = "progress-task-card";
-    const shouldHide =
-      currentFilter !== "all" && item.status !== currentFilter;
-    if (shouldHide) div.classList.add("hidden");
-
-    div.innerHTML = `
-      <div class="ptc-name">${escapeHtml(item.name)}</div>
-      <div class="ptc-meta">
-        <span class="dday-status-pill ${statusClass(item.status)}">${statusLabel(item.status)}</span>
-        <span style="font-size:11px;color:var(--gray-400)">${item.source === "dday" ? "D-Day 업무" : "오늘 업무"}</span>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-}
-
-// 필터 버튼 이벤트
-document.querySelectorAll(".filter-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentFilter = btn.dataset.filter;
-    renderProgressCards();
-  });
-});
-
-renderProgressCards();
-
-/* ──────────────────────────────────────────
-   5. 우선순위 TOP 3
-────────────────────────────────────────── */
-function renderPriorityTop3() {
-  const tasks  = loadTodayTasks().filter((t) => !t.done);
-  const list   = document.getElementById("priorityList");
-
-  if (tasks.length === 0) {
-    list.innerHTML = `<p class="priority-empty">완료되지 않은 업무가 없습니다. 🎉</p>`;
+  if (!tasks.length) {
+    el.innerHTML = `<p class="pri-empty">미완료 업무가 없습니다. 🎉</p>`;
     return;
   }
 
-  const top3 = tasks.slice(0, 3);
-  list.innerHTML = "";
+  const medals = ['🥇','🥈','🥉'];
+  const rkCls  = ['rk1','rk2','rk3'];
+  el.innerHTML = '';
 
-  top3.forEach((task, idx) => {
-    const medals = ["🥇", "🥈", "🥉"];
-    const rankClasses = ["rank-1", "rank-2", "rank-3"];
-    const div = document.createElement("div");
-    div.className = "priority-item";
+  tasks.slice(0, 3).forEach((t, i) => {
+    const div = document.createElement('div');
+    div.className = 'pri-item';
     div.innerHTML = `
-      <div class="rank-badge ${rankClasses[idx]}">${medals[idx]}</div>
-      <div class="priority-name">${escapeHtml(task.text)}</div>
-      <span class="badge badge-blue">우선순위 ${idx + 1}</span>
+      <div class="pri-rank ${rkCls[i]}">${medals[i]}</div>
+      <div class="pri-txt">${esc(t.text)}</div>
+      <span class="pill pill-b">TOP ${i+1}</span>
     `;
-    list.appendChild(div);
+    el.appendChild(div);
   });
 }
 
-renderPriorityTop3();
+/* ──────────────────────────────
+   캔버스 차트 공통 유틸
+────────────────────────────── */
+function setupCanvas(id, cssW, cssH) {
+  const canvas = $(id);
+  if (!canvas) return null;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = cssW * dpr;
+  canvas.height = cssH * dpr;
+  canvas.style.width  = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, W: cssW, H: cssH };
+}
 
-/* ──────────────────────────────────────────
-   6. 집중 타이머 (포모도로 스타일)
-────────────────────────────────────────── */
-let timerInterval   = null;
-let timerRemaining  = 25 * 60;  // 초 단위
-let timerMinutes    = 25;
-let timerRunning    = false;
-let timerCycles     = 0;
+/* ── 에리어 차트 ── */
+function drawAreaChart(s) {
+  const canvas = $('areaChart');
+  if (!canvas) return;
+  const cssW = canvas.parentElement.clientWidth || 500;
+  const cssH = 180;
+  const r    = setupCanvas('areaChart', cssW, cssH);
+  if (!r) return;
+  const { ctx, W, H } = r;
 
-const timerDisplay = document.getElementById("timerDisplay");
-const timerTip     = document.getElementById("timerTip");
+  const pad = { t:18, r:12, b:30, l:34 };
+  const cW  = W - pad.l - pad.r;
+  const cH  = H - pad.t - pad.b;
+
+  const labels = ['월','화','수','목','금','토','일'];
+  const thisWk = [2, 4, 3, 6, 5, 7, Math.min(s.done + 2, 10)];
+  const lastWk = [1, 3, 2, 4, 3, 5, 3];
+  const maxV   = Math.max(...thisWk, ...lastWk, 1) + 1;
+
+  const xOf = i => pad.l + (i / (labels.length - 1)) * cW;
+  const yOf = v => pad.t + cH - (v / maxV) * cH;
+
+  // Grid lines
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (i / 4) * cH;
+    ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cW, y); ctx.stroke();
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '10px -apple-system,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxV * (1 - i / 4)), pad.l - 5, y + 3.5);
+  }
+
+  // X labels
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '11px -apple-system,sans-serif';
+  ctx.textAlign = 'center';
+  labels.forEach((lbl, i) => ctx.fillText(lbl, xOf(i), H - pad.b + 16));
+
+  // Smooth line + fill helper
+  function drawLine(data, lineColor, fillColor) {
+    const pts = data.map((v, i) => ({ x: xOf(i), y: yOf(v) }));
+
+    // Fill
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i].x + pts[i+1].x) / 2;
+      const my = (pts[i].y + pts[i+1].y) / 2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+    }
+    ctx.quadraticCurveTo(pts[pts.length-2].x, pts[pts.length-2].y,
+                         pts[pts.length-1].x, pts[pts.length-1].y);
+    ctx.lineTo(pts[pts.length-1].x, pad.t + cH);
+    ctx.lineTo(pts[0].x, pad.t + cH);
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i].x + pts[i+1].x) / 2;
+      const my = (pts[i].y + pts[i+1].y) / 2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+    }
+    ctx.quadraticCurveTo(pts[pts.length-2].x, pts[pts.length-2].y,
+                         pts[pts.length-1].x, pts[pts.length-1].y);
+    ctx.strokeStyle = lineColor; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // Dots
+    pts.forEach(p => {
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, Math.PI*2);
+      ctx.fillStyle = lineColor; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+    });
+  }
+
+  // Last week (teal, back layer)
+  const tGrad = ctx.createLinearGradient(0, pad.t, 0, pad.t + cH);
+  tGrad.addColorStop(0, 'rgba(6,182,212,.20)');
+  tGrad.addColorStop(1, 'rgba(6,182,212,.01)');
+  drawLine(lastWk, '#06B6D4', tGrad);
+
+  // This week (blue, front layer)
+  const bGrad = ctx.createLinearGradient(0, pad.t, 0, pad.t + cH);
+  bGrad.addColorStop(0, 'rgba(74,108,247,.28)');
+  bGrad.addColorStop(1, 'rgba(74,108,247,.01)');
+  drawLine(thisWk, '#4A6CF7', bGrad);
+}
+
+/* ── 바 차트 ── */
+function drawBarChart(s) {
+  const canvas = $('barChart');
+  if (!canvas) return;
+  const cssW = canvas.parentElement.clientWidth || 260;
+  const cssH = 130;
+  const r    = setupCanvas('barChart', cssW, cssH);
+  if (!r) return;
+  const { ctx, W, H } = r;
+
+  const labels = ['대기 중', '진행 중', '완료'];
+  const vals   = [s.waiting, s.inProg, s.done];
+  const colors = ['#E2E8F0', '#4A6CF7', '#10B981'];
+  const maxV   = Math.max(...vals, 1);
+  const pad    = { t: 16, r: 10, b: 28, l: 10 };
+  const cW     = W - pad.l - pad.r;
+  const cH     = H - pad.t - pad.b;
+  const bSlot  = cW / labels.length;
+  const bW     = bSlot * 0.5;
+
+  labels.forEach((lbl, i) => {
+    const x  = pad.l + i * bSlot + (bSlot - bW) / 2;
+    const bH = Math.max((vals[i] / maxV) * cH, 2);
+    const y  = pad.t + cH - bH;
+    const rc = 4;
+
+    // Rounded-top bar
+    ctx.beginPath();
+    ctx.moveTo(x + rc, y);
+    ctx.lineTo(x + bW - rc, y);
+    ctx.quadraticCurveTo(x + bW, y, x + bW, y + rc);
+    ctx.lineTo(x + bW, y + bH);
+    ctx.lineTo(x, y + bH);
+    ctx.lineTo(x, y + rc);
+    ctx.quadraticCurveTo(x, y, x + rc, y);
+    ctx.closePath();
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+
+    // Value label
+    ctx.fillStyle  = '#1E293B';
+    ctx.font       = 'bold 11px -apple-system,sans-serif';
+    ctx.textAlign  = 'center';
+    ctx.fillText(vals[i], x + bW / 2, y - 4);
+
+    // X label
+    ctx.fillStyle = '#94A3B8';
+    ctx.font      = '10px -apple-system,sans-serif';
+    ctx.fillText(lbl, x + bW / 2, H - pad.b + 16);
+  });
+}
+
+/* ── 도넛 차트 ── */
+function drawDonutChart(s) {
+  const canvas = $('donutChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const cx  = W / 2, cy = H / 2;
+  const r   = Math.min(W, H) / 2 - 10;
+  const ir  = r * 0.60;
+  const tot = s.total || 1;
+  const segs = [
+    { v: s.done,   c: '#4A6CF7' },
+    { v: s.inProg, c: '#06B6D4' },
+    { v: s.waiting,c: '#E2E8F0' },
+  ];
+
+  let angle = -Math.PI / 2;
+  segs.forEach(seg => {
+    const sweep = (seg.v / tot) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, angle, angle + sweep);
+    ctx.closePath();
+    ctx.fillStyle = seg.c;
+    ctx.fill();
+    angle += sweep;
+  });
+
+  // 도넛 구멍
+  ctx.beginPath();
+  ctx.arc(cx, cy, ir, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+}
+
+/* ── 차트 일괄 그리기 ── */
+function drawAllCharts(s) {
+  drawAreaChart(s);
+  drawBarChart(s);
+  drawDonutChart(s);
+}
+
+/* ── 생산성 점수 ── */
+let timerCycles = 0;
+
+function updateProductivity() {
+  const tasks = loadTasks();
+  const done  = tasks.filter(t => t.done).length;
+  const pct   = tasks.length ? done / tasks.length : 0;
+
+  const score = Math.round(pct * 70)
+              + Math.min(timerCycles * 5, 20)
+              + (localStorage.getItem('workNote') ? 10 : 0);
+
+  $('prodScore').textContent = score;
+}
+
+/* ── 집중 타이머 ── */
+let timerSec     = 25 * 60;
+let timerMin     = 25;
+let timerRunning = false;
+let timerHandle  = null;
 
 const modeTips = {
-  25: "집중 모드: 25분 동안 업무에 몰입하세요.",
-  10: "휴식 모드: 10분 동안 충분히 쉬어요.",
-  5:  "짧은 휴식 모드: 5분 동안 스트레칭하세요.",
+  25: '집중 모드: 25분 업무 몰입',
+  10: '휴식 모드: 10분 충분히 쉬어요',
+   5: '짧은 휴식: 5분 스트레칭',
 };
 
-function formatTimer(sec) {
-  const m = String(Math.floor(sec / 60)).padStart(2, "0");
-  const s = String(sec % 60).padStart(2, "0");
-  return `${m}:${s}`;
+function fmtTime(sec) {
+  return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+}
+function setTimerDisplay() {
+  const d = $('timerDisplay');
+  if (d) d.textContent = fmtTime(timerSec);
 }
 
-function updateTimerDisplay() {
-  timerDisplay.textContent = formatTimer(timerRemaining);
-}
-
-// 모드 버튼
-document.querySelectorAll(".mode-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    if (timerRunning) stopTimer();
-    document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    timerMinutes   = parseInt(btn.dataset.mode);
-    timerRemaining = timerMinutes * 60;
-    timerDisplay.classList.remove("running", "finished");
-    timerTip.textContent = modeTips[timerMinutes];
-    updateTimerDisplay();
+document.querySelectorAll('.mbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (timerRunning) { clearInterval(timerHandle); timerRunning = false; }
+    document.querySelectorAll('.mbtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    timerMin = parseInt(btn.dataset.mode);
+    timerSec = timerMin * 60;
+    const d = $('timerDisplay');
+    if (d) d.classList.remove('running', 'finished');
+    const tip = $('timerTip');
+    if (tip) tip.textContent = modeTips[timerMin] || '';
+    setTimerDisplay();
   });
 });
 
-function startTimer() {
+$('timerStart').addEventListener('click', () => {
   if (timerRunning) return;
   timerRunning = true;
-  timerDisplay.classList.add("running");
-  timerDisplay.classList.remove("finished");
+  const d = $('timerDisplay');
+  if (d) { d.classList.add('running'); d.classList.remove('finished'); }
 
-  timerInterval = setInterval(() => {
-    timerRemaining--;
-    updateTimerDisplay();
-    if (timerRemaining <= 0) {
-      clearInterval(timerInterval);
+  timerHandle = setInterval(() => {
+    timerSec--;
+    setTimerDisplay();
+    if (timerSec <= 0) {
+      clearInterval(timerHandle);
       timerRunning = false;
-      timerDisplay.classList.remove("running");
-      timerDisplay.classList.add("finished");
       timerCycles++;
-      document.getElementById("timerCycleBadge").textContent = `🍅 ${timerCycles} 사이클`;
-      timerTip.textContent = "타이머 완료! 잠깐 휴식을 취하세요. 🎉";
-      updateProductivityScore();
+      if (d) { d.classList.remove('running'); d.classList.add('finished'); }
+      const p = $('cyclePill');
+      if (p) p.textContent = `🍅 ${timerCycles}사이클`;
+      const t = $('timerTip');
+      if (t) t.textContent = '완료! 잠깐 쉬어가세요 🎉';
+      updateProductivity();
     }
   }, 1000);
-}
+});
 
-function stopTimer() {
-  clearInterval(timerInterval);
+$('timerPause').addEventListener('click', () => {
+  clearInterval(timerHandle);
   timerRunning = false;
-  timerDisplay.classList.remove("running");
-}
-
-function resetTimer() {
-  stopTimer();
-  timerRemaining = timerMinutes * 60;
-  timerDisplay.classList.remove("running", "finished");
-  timerTip.textContent = modeTips[timerMinutes] || "";
-  updateTimerDisplay();
-}
-
-document.getElementById("timerStart").addEventListener("click", startTimer);
-document.getElementById("timerPause").addEventListener("click", stopTimer);
-document.getElementById("timerReset").addEventListener("click", resetTimer);
-
-/* ──────────────────────────────────────────
-   7. 퇴근 전 업무 노트 저장 (localStorage)
-────────────────────────────────────────── */
-const NOTE_KEY        = "workNote";
-const NOTE_DATE_KEY   = "workNoteDate";
-
-function loadNote() {
-  const textarea = document.getElementById("workNote");
-  const saved    = localStorage.getItem(NOTE_KEY);
-  const savedDate = localStorage.getItem(NOTE_DATE_KEY);
-
-  // 오늘 저장된 노트가 있으면 불러옴
-  if (saved && savedDate === TODAY_STR) {
-    textarea.value = saved;
-  }
-}
-
-document.getElementById("saveNoteBtn").addEventListener("click", () => {
-  const text   = document.getElementById("workNote").value;
-  const status = document.getElementById("noteSaveStatus");
-  localStorage.setItem(NOTE_KEY, text);
-  localStorage.setItem(NOTE_DATE_KEY, TODAY_STR);
-  status.textContent = "✔ 저장됨";
-  setTimeout(() => (status.textContent = ""), 2500);
-  renderYesterdayRemind();  // 저장 후 리마인드 갱신
-  updateProductivityScore();
+  const d = $('timerDisplay');
+  if (d) d.classList.remove('running');
 });
 
-document.getElementById("clearNoteBtn").addEventListener("click", () => {
-  document.getElementById("workNote").value = "";
+$('timerReset').addEventListener('click', () => {
+  clearInterval(timerHandle);
+  timerRunning = false;
+  timerSec     = timerMin * 60;
+  const d = $('timerDisplay');
+  if (d) d.classList.remove('running', 'finished');
+  const t = $('timerTip');
+  if (t) t.textContent = modeTips[timerMin] || '';
+  setTimerDisplay();
+});
+
+/* ── 퇴근 노트 ── */
+const NOTE_KEY = 'workNote';
+const DATE_KEY = 'workNoteDate';
+
+(function loadNote() {
+  const ta   = $('workNote');
+  const saved = localStorage.getItem(NOTE_KEY);
+  const dated = localStorage.getItem(DATE_KEY);
+  if (ta && saved && dated === TODAY) ta.value = saved;
+})();
+
+$('saveNoteBtn').addEventListener('click', () => {
+  const ta  = $('workNote');
+  const bdg = $('saveBadge');
+  if (!ta) return;
+  localStorage.setItem(NOTE_KEY, ta.value);
+  localStorage.setItem(DATE_KEY, TODAY);
+  if (bdg) { bdg.textContent = '✔ 저장됨'; setTimeout(() => bdg.textContent = '', 2500); }
+  renderYesterday();
+  updateProductivity();
+});
+
+$('clearNoteBtn').addEventListener('click', () => {
+  const ta  = $('workNote');
+  const bdg = $('saveBadge');
+  if (ta) ta.value = '';
   localStorage.removeItem(NOTE_KEY);
-  localStorage.removeItem(NOTE_DATE_KEY);
-  document.getElementById("noteSaveStatus").textContent = "🗑 초기화됨";
-  setTimeout(() => (document.getElementById("noteSaveStatus").textContent = ""), 2500);
+  localStorage.removeItem(DATE_KEY);
+  if (bdg) { bdg.textContent = '🗑 초기화됨'; setTimeout(() => bdg.textContent = '', 2500); }
 });
 
-loadNote();
-
-/* ──────────────────────────────────────────
-   8. 어제 업무 리마인드 & 오늘 업무 추천
-────────────────────────────────────────── */
-function getYesterdayStr() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return toDateStr(d);
+/* ── 어제 리마인드 ── */
+function yesterdayStr() {
+  const d = new Date(); d.setDate(d.getDate() - 1); return toStr(d);
 }
 
-function renderYesterdayRemind() {
-  const savedDate     = localStorage.getItem(NOTE_DATE_KEY);
-  const savedNote     = localStorage.getItem(NOTE_KEY);
-  const yesterdayStr  = getYesterdayStr();
+function renderYesterday() {
+  const savedDate = localStorage.getItem(DATE_KEY);
+  const savedNote = localStorage.getItem(NOTE_KEY);
+  const yd        = yesterdayStr();
+  const hasYd     = savedDate === yd && savedNote && savedNote.trim();
 
-  const box       = document.getElementById("yesterdayBox");
-  const recommend = document.getElementById("recommendBox");
+  const ybox = $('yesterdayBox');
+  const rbox = $('recommendBox');
+  if (!ybox || !rbox) return;
 
-  // 어제 날짜와 저장일이 일치하는 경우만 리마인드 표시
-  const hasYesterday = (savedDate === yesterdayStr && savedNote && savedNote.trim().length > 0);
-
-  if (hasYesterday) {
-    box.innerHTML = `
-      <div class="yesterday-date">📌 ${formatKorDate(yesterdayStr)} 업무 노트</div>
-      <div>${escapeHtml(savedNote)}</div>
-    `;
-    recommend.innerHTML = `
-      <div class="recommend-title">💡 오늘 이어서 진행할 업무를 확인해보세요</div>
-      <p class="recommend-text">어제 작성한 내용을 바탕으로 오늘 이어서 진행할 업무를 확인해보세요. 아래 내용을 참고해 오늘의 업무 목록을 구성해보세요!</p>
-      <div class="recommend-content">${escapeHtml(savedNote)}</div>
-    `;
+  if (hasYd) {
+    ybox.innerHTML = `
+      <div class="ybox">
+        <div class="y-date">📌 ${korDate(yd)} 업무 노트</div>
+        ${esc(savedNote)}
+      </div>`;
+    rbox.innerHTML = `
+      <div class="rec-box">
+        <div class="rec-ttl">💡 오늘 이어서 진행할 업무</div>
+        <p class="rec-txt">어제 작성한 내용을 바탕으로 오늘 이어서 진행할 업무를 확인해보세요!</p>
+        <div class="rec-content">${esc(savedNote)}</div>
+      </div>`;
   } else {
-    box.innerHTML = `<div class="yesterday-empty">아직 저장된 이전 업무 노트가 없습니다.</div>`;
-    recommend.innerHTML = `
-      <div class="recommend-title">💡 오늘의 업무 추천</div>
-      <p class="recommend-text">퇴근 전 업무 노트를 작성하면, 다음 날 접속 시 어제 진행한 내용을 바탕으로 오늘 이어서 할 업무를 추천해드려요.</p>
-    `;
+    ybox.innerHTML = `<div class="ybox"><span class="y-empty">아직 저장된 이전 업무 노트가 없습니다.</span></div>`;
+    rbox.innerHTML = `
+      <div class="rec-box">
+        <div class="rec-ttl">💡 오늘의 업무 추천</div>
+        <p class="rec-txt">퇴근 노트를 작성하면 다음 날 어제 내용을 바탕으로 오늘 할 업무를 추천해드려요.</p>
+      </div>`;
   }
 }
 
-renderYesterdayRemind();
+/* ── 사이드바 네비게이션 ── */
+document.querySelectorAll('.nav-it').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-it').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
 
-/* ──────────────────────────────────────────
-   9. 오늘의 생산성 점수 계산 (창의 기능 1)
-   - 오늘 업무 완료율 + 타이머 사이클 + 노트 작성 여부
-────────────────────────────────────────── */
-function updateProductivityScore() {
-  const tasks    = loadTodayTasks();
-  const total    = tasks.length;
-  const done     = tasks.filter((t) => t.done).length;
-  const pct      = total ? done / total : 0;
+    const target = $(item.dataset.target);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // 점수 계산: 업무완료율 70% + 타이머 사이클 20% + 노트 작성 10%
-  const taskScore   = Math.round(pct * 70);
-  const timerScore  = Math.min(timerCycles * 5, 20);
-  const noteScore   = localStorage.getItem(NOTE_KEY) ? 10 : 0;
-  const total_score = taskScore + timerScore + noteScore;
-
-  const el = document.getElementById("productivityScore");
-  el.textContent = `${total_score}점`;
-
-  // 점수에 따른 색상
-  const badge = document.getElementById("productivityBadge");
-  if (total_score >= 80) {
-    badge.style.background = "rgba(22,163,74,.25)";
-    badge.style.borderColor = "rgba(22,163,74,.4)";
-  } else if (total_score >= 50) {
-    badge.style.background = "rgba(37,99,235,.2)";
-    badge.style.borderColor = "rgba(37,99,235,.35)";
-  } else {
-    badge.style.background = "rgba(255,255,255,.15)";
-    badge.style.borderColor = "rgba(255,255,255,.25)";
-  }
-}
-
-updateProductivityScore();
-
-/* ──────────────────────────────────────────
-   10. 사이드바 햄버거 메뉴 (모바일)
-────────────────────────────────────────── */
-const sidebar        = document.getElementById("sidebar");
-const hamburger      = document.getElementById("hamburger");
-const sidebarOverlay = document.getElementById("sidebarOverlay");
-
-hamburger.addEventListener("click", () => {
-  sidebar.classList.toggle("open");
-  sidebarOverlay.classList.toggle("open");
-});
-sidebarOverlay.addEventListener("click", () => {
-  sidebar.classList.remove("open");
-  sidebarOverlay.classList.remove("open");
-});
-
-// 사이드바 메뉴 클릭 시 모바일에서 닫기
-document.querySelectorAll(".nav-item").forEach((item) => {
-  item.addEventListener("click", () => {
-    sidebar.classList.remove("open");
-    sidebarOverlay.classList.remove("open");
+    // 모바일에서 닫기
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
   });
 });
 
-/* ──────────────────────────────────────────
-   11. 사이드바 활성 메뉴 스크롤 추적
-────────────────────────────────────────── */
-const sections = document.querySelectorAll("section[id]");
-const navItems = document.querySelectorAll(".nav-item[data-section]");
+/* ── 햄버거 메뉴 ── */
+$('hamburger').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+});
+$('overlay').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+});
 
-const sectionMap = {
-  "section-profile":   "profile",
-  "section-dday":      "dday",
-  "section-today":     "today",
-  "section-progress":  "progress",
-  "section-priority":  "priority",
-  "section-timer":     "timer",
-  "section-note":      "note",
-  "section-yesterday": "yesterday",
-};
+/* ── 리사이즈 시 차트 재그리기 ── */
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const s = computeStats();
+    drawAreaChart(s);
+    drawBarChart(s);
+  }, 150);
+});
 
-function updateActiveNav() {
-  let currentId = "";
-  sections.forEach((sec) => {
-    const rect = sec.getBoundingClientRect();
-    if (rect.top <= 120) currentId = sec.id;
-  });
-
-  const active = sectionMap[currentId];
-  navItems.forEach((item) => {
-    item.classList.toggle("active", item.dataset.section === active);
-  });
-}
-
-window.addEventListener("scroll", updateActiveNav, { passive: true });
+/* ── 초기 렌더 ── */
+renderDday();
+renderTasks();
+renderPriority();
+renderYesterday();
+renderStats();  // 차트 포함
