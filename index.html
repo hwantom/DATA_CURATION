@@ -11,7 +11,6 @@
 
   <!-- ══ 사이드바 ══ -->
   <aside class="sidebar" id="sidebar">
-
     <div class="sb-top">
       <div class="sb-brand">
         <span class="sb-ic">⊞</span>
@@ -41,40 +40,23 @@
 
     <nav class="sb-nav">
       <p class="nav-label"><span class="nl-txt">메인</span></p>
-      <a class="nav-it active" data-target="stat-row">
-        <span class="ni-ic">🏠</span><span class="ni-tx">대시보드</span>
-      </a>
-      <a class="nav-it" data-target="dday-sec">
-        <span class="ni-ic">📅</span><span class="ni-tx">D-Day 관리</span>
-      </a>
-      <a class="nav-it" data-target="tasks-sec">
-        <span class="ni-ic">✅</span><span class="ni-tx">오늘의 업무</span>
-      </a>
-      <a class="nav-it" data-target="priority-sec">
-        <span class="ni-ic">🏆</span><span class="ni-tx">우선순위 TOP 3</span>
-      </a>
+      <a class="nav-it active" data-target="stat-row"><span class="ni-ic">🏠</span><span class="ni-tx">대시보드</span></a>
+      <a class="nav-it" data-target="cal-sec">          <span class="ni-ic">📆</span><span class="ni-tx">주간 캘린더</span></a>
+      <a class="nav-it" data-target="dday-sec">         <span class="ni-ic">📅</span><span class="ni-tx">D-Day 관리</span></a>
+      <a class="nav-it" data-target="tasks-sec">        <span class="ni-ic">✅</span><span class="ni-tx">오늘의 업무</span></a>
+      <a class="nav-it" data-target="priority-sec">     <span class="ni-ic">🏆</span><span class="ni-tx">우선순위 TOP 3</span></a>
       <p class="nav-label"><span class="nl-txt">도구</span></p>
-      <a class="nav-it" data-target="timer-sec">
-        <span class="ni-ic">⏱</span><span class="ni-tx">집중 타이머</span>
-      </a>
-      <a class="nav-it" data-target="note-sec">
-        <span class="ni-ic">📝</span><span class="ni-tx">퇴근 노트</span>
-      </a>
-      <a class="nav-it" data-target="yday-sec">
-        <span class="ni-ic">🔔</span><span class="ni-tx">어제 리마인드</span>
-      </a>
+      <a class="nav-it" data-target="timer-sec">        <span class="ni-ic">⏱</span><span class="ni-tx">집중 타이머</span></a>
+      <a class="nav-it" data-target="note-sec">         <span class="ni-ic">📝</span><span class="ni-tx">퇴근 노트</span></a>
+      <a class="nav-it" data-target="yday-sec">         <span class="ni-ic">🔔</span><span class="ni-tx">어제 리마인드</span></a>
     </nav>
-
-  </aside><!-- /sidebar -->
+  </aside>
 
   <!-- ══ 메인 ══ -->
   <div class="main-wrap" id="mainWrap">
 
-    <!-- 상단 바 -->
     <header class="topbar">
-      <button class="hb" id="hamburger" title="메뉴">
-        <span></span><span></span><span></span>
-      </button>
+      <button class="hb" id="hamburger"><span></span><span></span><span></span></button>
       <div class="tb-left">
         <h1 class="tb-title">업무 대시보드</h1>
         <span class="tb-date" id="tbDate">–</span>
@@ -85,10 +67,9 @@
       </div>
     </header>
 
-    <!-- 페이지 (스크롤 없음) -->
     <main class="page">
 
-      <!-- ① 통계 카드 4종 -->
+      <!-- ① 통계 카드 -->
       <div class="stat-row" id="stat-row">
         <div class="sc"><div class="sc-ic ic-b">📋</div><div class="sc-body"><div class="sc-v" id="stTotal">0</div><div class="sc-l">전체 업무</div></div><span class="sc-tag tag-n">업무 현황</span></div>
         <div class="sc"><div class="sc-ic ic-g">✅</div><div class="sc-body"><div class="sc-v" id="stDone">0</div><div class="sc-l">완료 업무</div></div><span class="sc-tag tag-u" id="doneBadge">0%</span></div>
@@ -96,25 +77,34 @@
         <div class="sc"><div class="sc-ic ic-r">⚠️</div><div class="sc-body"><div class="sc-v" id="stUrgent">0</div><div class="sc-l">D-Day 임박</div></div><span class="sc-tag tag-d">3일 내</span></div>
       </div>
 
-      <!-- ② 메인 그리드 (좌:1fr / 우:250px) -->
+      <!-- ② 메인 그리드 -->
       <div class="main-area">
 
         <!-- 좌측 컬럼 -->
         <div class="col-l">
 
-          <!-- 주간 에리어 차트 -->
-          <div class="card chart-card">
+          <!-- 주간 캘린더 (도넛 차트 일별) -->
+          <div class="card chart-card" id="cal-sec">
             <div class="card-hd">
               <div>
-                <div class="ctitle">이번 주 업무 완료 현황</div>
-                <div class="csub">최근 7일 기준</div>
+                <div class="ctitle">📆 이번 주 업무 캘린더</div>
+                <div class="csub" id="calMonthLabel">–</div>
               </div>
-              <div class="legend">
-                <span class="ldot" style="background:#4A6CF7"></span>이번 주
-                <span class="ldot" style="background:#06B6D4;margin-left:10px"></span>지난 주
+              <div class="cal-nav">
+                <button class="cal-nav-btn" id="calPrev" title="이전 주">‹</button>
+                <span class="cal-week-txt" id="calWeekTxt">이번 주</span>
+                <button class="cal-nav-btn" id="calNext" title="다음 주">›</button>
               </div>
             </div>
-            <canvas id="areaChart"></canvas>
+            <!-- 일별 도넛 차트 그리드 -->
+            <div class="cal-grid" id="calGrid"></div>
+            <!-- 범례 -->
+            <div class="cal-legend">
+              <span class="cl-dot" style="background:#EF4444"></span>~39%
+              <span class="cl-dot" style="background:#F59E0B;margin-left:10px"></span>40~59%
+              <span class="cl-dot" style="background:#4A6CF7;margin-left:10px"></span>60~79%
+              <span class="cl-dot" style="background:#10B981;margin-left:10px"></span>80%~
+            </div>
           </div>
 
           <!-- D-Day 스트립 -->
@@ -126,9 +116,8 @@
             <div class="dday-row" id="ddayGrid"></div>
           </div>
 
-          <!-- 업무 + 우선순위 행 -->
+          <!-- 오늘 업무 + 우선순위 -->
           <div class="tasks-row">
-
             <div class="card flex-card" id="tasks-sec">
               <div class="card-hd" style="flex-shrink:0">
                 <div class="ctitle">✅ 오늘의 업무</div>
@@ -148,16 +137,15 @@
               </div>
               <div id="priorityList" style="flex:1;overflow-y:auto;min-height:0"></div>
             </div>
-
-          </div><!-- /tasks-row -->
+          </div>
 
         </div><!-- /col-l -->
 
         <!-- 우측 컬럼 -->
         <div class="col-r">
 
-          <!-- 진행도 (바 차트 + 도넛 + 칩) -->
-          <div class="card card-sm" id="stat-row-anchor">
+          <!-- 전체 진행도 -->
+          <div class="card card-sm">
             <div class="card-hd" style="margin-bottom:8px">
               <div class="ctitle sm">전체 진행도</div>
               <span class="pill pill-b" id="overallPct">0%</span>
@@ -217,13 +205,15 @@
           </div>
 
         </div><!-- /col-r -->
-
       </div><!-- /main-area -->
 
     </main>
   </div><!-- /main-wrap -->
 
-</div><!-- /layout -->
+  <!-- 모바일 오버레이 -->
+  <div class="sb-overlay" id="sbOverlay"></div>
+
+</div>
 <script src="script.js"></script>
 </body>
 </html>
