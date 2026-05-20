@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>업무 종합 대시보드 | 민승환</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== 사이드바 ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">📋</span>
+      <span class="logo-text">WorkBoard</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#section-profile"   class="nav-item active" data-section="profile">
+        <span class="nav-icon">🏠</span><span>홈</span>
+      </a>
+      <a href="#section-dday"      class="nav-item" data-section="dday">
+        <span class="nav-icon">📅</span><span>D-Day 관리</span>
+      </a>
+      <a href="#section-today"     class="nav-item" data-section="today">
+        <span class="nav-icon">✅</span><span>오늘의 업무</span>
+      </a>
+      <a href="#section-progress"  class="nav-item" data-section="progress">
+        <span class="nav-icon">📊</span><span>진행 현황</span>
+      </a>
+      <a href="#section-priority"  class="nav-item" data-section="priority">
+        <span class="nav-icon">🏆</span><span>우선순위 TOP 3</span>
+      </a>
+      <a href="#section-timer"     class="nav-item" data-section="timer">
+        <span class="nav-icon">⏱️</span><span>집중 타이머</span>
+      </a>
+      <a href="#section-note"      class="nav-item" data-section="note">
+        <span class="nav-icon">📝</span><span>퇴근 노트</span>
+      </a>
+      <a href="#section-yesterday" class="nav-item" data-section="yesterday">
+        <span class="nav-icon">🔔</span><span>어제 업무 리마인드</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="version-badge">v1.0.0</span>
+    </div>
+  </aside>
+
+  <!-- ===== 모바일 햄버거 버튼 ===== -->
+  <button class="hamburger" id="hamburger" aria-label="메뉴 열기">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- ===== 메인 콘텐츠 ===== -->
+  <main class="main-content">
+
+    <!-- 1. 프로필 영역 -->
+    <section class="card profile-card" id="section-profile">
+      <div class="profile-left">
+        <div class="avatar">민</div>
+        <div class="profile-info">
+          <h1 class="profile-name">민승환 <span class="student-id">학번 202101308</span></h1>
+          <p class="status-message" id="statusMessage">오늘도 업무 흐름을 한눈에 정리해보세요.</p>
+        </div>
+      </div>
+      <div class="profile-right">
+        <div class="date-time-box">
+          <div class="today-date" id="todayDate">–</div>
+          <div class="today-time" id="todayTime">–</div>
+        </div>
+        <div class="productivity-badge" id="productivityBadge">
+          생산성 점수 <strong id="productivityScore">–</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. D-Day 관리 -->
+    <section class="card" id="section-dday">
+      <div class="card-header">
+        <h2 class="card-title">📅 업무 D-Day 관리</h2>
+        <span class="badge badge-blue" id="ddayCount">0건</span>
+      </div>
+      <div class="dday-grid" id="ddayGrid"><!-- JS 렌더 --></div>
+    </section>
+
+    <!-- 3. 오늘의 업무 -->
+    <section class="card" id="section-today">
+      <div class="card-header">
+        <h2 class="card-title">✅ 오늘의 업무</h2>
+        <span class="completion-rate" id="completionRate">완료율 0%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="todayProgressBar" style="width:0%"></div>
+      </div>
+      <div class="task-input-row">
+        <input type="text" id="taskInput" class="task-input" placeholder="새 업무를 입력하세요…" maxlength="60" />
+        <button class="btn btn-primary" id="addTaskBtn">추가</button>
+      </div>
+      <ul class="task-list" id="taskList"><!-- JS 렌더 --></ul>
+    </section>
+
+    <!-- 4. 진행 현황 (카드) -->
+    <section class="card" id="section-progress">
+      <div class="card-header">
+        <h2 class="card-title">📊 현재 업무 진행도</h2>
+        <div class="filter-row">
+          <button class="filter-btn active" data-filter="all">전체</button>
+          <button class="filter-btn" data-filter="waiting">대기 중</button>
+          <button class="filter-btn" data-filter="progress">진행 중</button>
+          <button class="filter-btn" data-filter="done">완료</button>
+        </div>
+      </div>
+      <div class="overall-progress-wrap">
+        <div class="overall-bar-track">
+          <div class="overall-bar-fill" id="overallBar" style="width:0%"></div>
+        </div>
+        <span class="overall-pct" id="overallPct">0%</span>
+      </div>
+      <div class="status-summary" id="statusSummary"><!-- JS 렌더 --></div>
+      <div class="progress-cards" id="progressCards"><!-- JS 렌더 --></div>
+    </section>
+
+    <!-- 5. 우선순위 TOP 3 -->
+    <section class="card" id="section-priority">
+      <div class="card-header">
+        <h2 class="card-title">🏆 오늘의 우선순위 TOP 3</h2>
+      </div>
+      <div class="priority-list" id="priorityList"><!-- JS 렌더 --></div>
+    </section>
+
+    <!-- 6. 집중 타이머 (포모도로) -->
+    <section class="card timer-card" id="section-timer">
+      <div class="card-header">
+        <h2 class="card-title">⏱️ 업무 집중 타이머</h2>
+        <span class="badge badge-orange" id="timerCycleBadge">🍅 0 사이클</span>
+      </div>
+      <div class="timer-body">
+        <div class="timer-mode-row">
+          <button class="mode-btn active" data-mode="25">집중 25분</button>
+          <button class="mode-btn" data-mode="10">휴식 10분</button>
+          <button class="mode-btn" data-mode="5">짧은 휴식 5분</button>
+        </div>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="timer-controls">
+          <button class="btn btn-primary" id="timerStart">▶ 시작</button>
+          <button class="btn btn-outline" id="timerPause">⏸ 일시정지</button>
+          <button class="btn btn-outline" id="timerReset">↺ 초기화</button>
+        </div>
+        <p class="timer-tip" id="timerTip">집중 모드: 25분 동안 업무에 몰입하세요.</p>
+      </div>
+    </section>
+
+    <!-- 7. 퇴근 전 업무 노트 -->
+    <section class="card" id="section-note">
+      <div class="card-header">
+        <h2 class="card-title">📝 퇴근 전 업무 노트</h2>
+        <span class="save-status" id="noteSaveStatus"></span>
+      </div>
+      <textarea
+        id="workNote"
+        class="work-note-textarea"
+        placeholder="오늘 어디까지 진행했나요? 내일 이어서 해야 할 내용을 적어보세요."
+        rows="6"
+      ></textarea>
+      <div class="note-actions">
+        <button class="btn btn-primary" id="saveNoteBtn">💾 저장</button>
+        <button class="btn btn-outline" id="clearNoteBtn">🗑 초기화</button>
+      </div>
+    </section>
+
+    <!-- 8. 어제 업무 리마인드 + 오늘 업무 추천 -->
+    <section class="card" id="section-yesterday">
+      <div class="card-header">
+        <h2 class="card-title">🔔 어제 진행했던 일 리마인드</h2>
+      </div>
+      <div class="yesterday-box" id="yesterdayBox"><!-- JS 렌더 --></div>
+
+      <div class="recommend-box" id="recommendBox"><!-- JS 렌더 --></div>
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
