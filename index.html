@@ -7,101 +7,118 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div class="layout">
+<div class="layout" id="layout">
 
-  <!-- ── Sidebar ── -->
+  <!-- ══ 사이드바 ══ -->
   <aside class="sidebar" id="sidebar">
-    <div class="sb-brand"><span class="sb-logo">⊞</span> WorkBoard</div>
+
+    <div class="sb-top">
+      <div class="sb-brand">
+        <span class="sb-ic">⊞</span>
+        <span class="sb-bname">WorkBoard</span>
+      </div>
+      <button class="sb-close" id="sbToggle" title="사이드바 접기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+    </div>
 
     <div class="sb-profile">
       <div class="sb-avatar">민</div>
-      <div class="sb-name">민승환</div>
-      <div class="sb-sub">학번 202101308</div>
-      <div class="sb-counts">
-        <div class="sb-cnt"><span class="scv" id="sbTotal">–</span><span class="scl">전체</span></div>
-        <div class="sb-cnt"><span class="scv" id="sbDone">–</span><span class="scl">완료</span></div>
-        <div class="sb-cnt"><span class="scv" id="sbUrgent">–</span><span class="scl">긴급</span></div>
+      <div class="sb-info">
+        <div class="sb-uname">민승환</div>
+        <div class="sb-usub">202101308</div>
+        <div class="sb-stats">
+          <div class="sb-stat"><span class="ss-v" id="sbTotal">–</span><span class="ss-l">전체</span></div>
+          <div class="sb-divider"></div>
+          <div class="sb-stat"><span class="ss-v" id="sbDone">–</span><span class="ss-l">완료</span></div>
+          <div class="sb-divider"></div>
+          <div class="sb-stat"><span class="ss-v" id="sbUrgent">–</span><span class="ss-l">긴급</span></div>
+        </div>
       </div>
     </div>
 
     <nav class="sb-nav">
-      <p class="nav-sec">메인</p>
-      <a class="nav-it active" data-target="stat-row">   <span>🏠</span> 대시보드</a>
-      <a class="nav-it" data-target="dday-sec">          <span>📅</span> D-Day 관리</a>
-      <a class="nav-it" data-target="tasks-sec">         <span>✅</span> 오늘의 업무</a>
-      <a class="nav-it" data-target="priority-sec">      <span>🏆</span> 우선순위 TOP 3</a>
-      <p class="nav-sec">도구</p>
-      <a class="nav-it" data-target="timer-sec">         <span>⏱</span> 집중 타이머</a>
-      <a class="nav-it" data-target="note-sec">          <span>📝</span> 퇴근 노트</a>
-      <a class="nav-it" data-target="yesterday-sec">     <span>🔔</span> 어제 리마인드</a>
+      <p class="nav-label"><span class="nl-txt">메인</span></p>
+      <a class="nav-it active" data-target="stat-row">
+        <span class="ni-ic">🏠</span><span class="ni-tx">대시보드</span>
+      </a>
+      <a class="nav-it" data-target="dday-sec">
+        <span class="ni-ic">📅</span><span class="ni-tx">D-Day 관리</span>
+      </a>
+      <a class="nav-it" data-target="tasks-sec">
+        <span class="ni-ic">✅</span><span class="ni-tx">오늘의 업무</span>
+      </a>
+      <a class="nav-it" data-target="priority-sec">
+        <span class="ni-ic">🏆</span><span class="ni-tx">우선순위 TOP 3</span>
+      </a>
+      <p class="nav-label"><span class="nl-txt">도구</span></p>
+      <a class="nav-it" data-target="timer-sec">
+        <span class="ni-ic">⏱</span><span class="ni-tx">집중 타이머</span>
+      </a>
+      <a class="nav-it" data-target="note-sec">
+        <span class="ni-ic">📝</span><span class="ni-tx">퇴근 노트</span>
+      </a>
+      <a class="nav-it" data-target="yday-sec">
+        <span class="ni-ic">🔔</span><span class="ni-tx">어제 리마인드</span>
+      </a>
     </nav>
-  </aside>
 
-  <div class="overlay" id="overlay"></div>
+  </aside><!-- /sidebar -->
 
-  <!-- ── Main ── -->
-  <div class="main-wrap">
+  <!-- ══ 메인 ══ -->
+  <div class="main-wrap" id="mainWrap">
+
+    <!-- 상단 바 -->
     <header class="topbar">
-      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
-      <div class="tb-info">
-        <h1 class="tb-heading">대시보드</h1>
+      <button class="hb" id="hamburger" title="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="tb-left">
+        <h1 class="tb-title">업무 대시보드</h1>
         <span class="tb-date" id="tbDate">–</span>
       </div>
       <div class="tb-right">
         <div class="tb-clock" id="tbClock">00:00:00</div>
-        <div class="prod-pill">생산성 <strong id="prodScore">0</strong>점</div>
+        <div class="prod-pill">생산성&nbsp;<strong id="prodScore">0</strong>점</div>
       </div>
     </header>
 
+    <!-- 페이지 (스크롤 없음) -->
     <main class="page">
 
-      <!-- ① 통계 카드 -->
+      <!-- ① 통계 카드 4종 -->
       <div class="stat-row" id="stat-row">
-        <div class="stat-card">
-          <div class="sic sic-b">📋</div>
-          <div class="sbody"><div class="sv" id="stTotal">0</div><div class="sl">전체 업무</div></div>
-          <div class="stag stag-n">업무 현황</div>
-        </div>
-        <div class="stat-card">
-          <div class="sic sic-g">✅</div>
-          <div class="sbody"><div class="sv" id="stDone">0</div><div class="sl">완료 업무</div></div>
-          <div class="stag stag-u" id="stDoneBadge">완료율 0%</div>
-        </div>
-        <div class="stat-card">
-          <div class="sic sic-o">🔄</div>
-          <div class="sbody"><div class="sv" id="stProg">0</div><div class="sl">진행 중</div></div>
-          <div class="stag stag-n">진행 중</div>
-        </div>
-        <div class="stat-card">
-          <div class="sic sic-r">⚠️</div>
-          <div class="sbody"><div class="sv" id="stUrgent">0</div><div class="sl">D-Day 임박</div></div>
-          <div class="stag stag-d">3일 내 마감</div>
-        </div>
+        <div class="sc"><div class="sc-ic ic-b">📋</div><div class="sc-body"><div class="sc-v" id="stTotal">0</div><div class="sc-l">전체 업무</div></div><span class="sc-tag tag-n">업무 현황</span></div>
+        <div class="sc"><div class="sc-ic ic-g">✅</div><div class="sc-body"><div class="sc-v" id="stDone">0</div><div class="sc-l">완료 업무</div></div><span class="sc-tag tag-u" id="doneBadge">0%</span></div>
+        <div class="sc"><div class="sc-ic ic-o">🔄</div><div class="sc-body"><div class="sc-v" id="stProg">0</div><div class="sc-l">진행 중</div></div><span class="sc-tag tag-n">진행 중</span></div>
+        <div class="sc"><div class="sc-ic ic-r">⚠️</div><div class="sc-body"><div class="sc-v" id="stUrgent">0</div><div class="sc-l">D-Day 임박</div></div><span class="sc-tag tag-d">3일 내</span></div>
       </div>
 
-      <!-- ② 2단 그리드 -->
-      <div class="g2">
+      <!-- ② 메인 그리드 (좌:1fr / 우:250px) -->
+      <div class="main-area">
 
-        <!-- 좌측 메인 -->
+        <!-- 좌측 컬럼 -->
         <div class="col-l">
 
-          <!-- 주간 차트 -->
-          <div class="card">
+          <!-- 주간 에리어 차트 -->
+          <div class="card chart-card">
             <div class="card-hd">
               <div>
                 <div class="ctitle">이번 주 업무 완료 현황</div>
-                <div class="csub">최근 7일 기준 · 오늘 포함</div>
+                <div class="csub">최근 7일 기준</div>
               </div>
               <div class="legend">
                 <span class="ldot" style="background:#4A6CF7"></span>이번 주
-                <span class="ldot" style="background:#06B6D4;margin-left:12px"></span>지난 주
+                <span class="ldot" style="background:#06B6D4;margin-left:10px"></span>지난 주
               </div>
             </div>
             <canvas id="areaChart"></canvas>
           </div>
 
-          <!-- D-Day -->
-          <div class="card" id="dday-sec">
+          <!-- D-Day 스트립 -->
+          <div class="card dday-card" id="dday-sec">
             <div class="card-hd">
               <div class="ctitle">📅 D-Day 업무 현황</div>
               <span class="pill pill-b" id="ddayPill">0건</span>
@@ -109,67 +126,58 @@
             <div class="dday-row" id="ddayGrid"></div>
           </div>
 
-          <!-- 오늘 업무 + 우선순위 -->
-          <div class="g-tasks">
-            <div class="card" id="tasks-sec">
-              <div class="card-hd" style="margin-bottom:10px">
+          <!-- 업무 + 우선순위 행 -->
+          <div class="tasks-row">
+
+            <div class="card flex-card" id="tasks-sec">
+              <div class="card-hd" style="flex-shrink:0">
                 <div class="ctitle">✅ 오늘의 업무</div>
                 <span class="pill pill-g" id="compPill">0%</span>
               </div>
-              <div class="pb-track"><div class="pb-fill" id="todayBar" style="width:0%"></div></div>
-              <div class="ti-row">
-                <input id="taskInput" class="tinput" placeholder="새 업무 입력…" maxlength="60" />
+              <div class="pb-track" style="flex-shrink:0"><div class="pb-fill" id="todayBar" style="width:0%"></div></div>
+              <div class="ti-row" style="flex-shrink:0">
+                <input id="taskInput" class="tinput" placeholder="새 업무 입력…" maxlength="60"/>
                 <button class="btn-add" id="addTaskBtn">+</button>
               </div>
               <ul id="taskList" class="tlist"></ul>
             </div>
 
-            <div class="card" id="priority-sec">
-              <div class="card-hd" style="margin-bottom:12px">
+            <div class="card flex-card" id="priority-sec">
+              <div class="card-hd" style="flex-shrink:0;margin-bottom:8px">
                 <div class="ctitle">🏆 우선순위 TOP 3</div>
               </div>
-              <div id="priorityList"></div>
+              <div id="priorityList" style="flex:1;overflow-y:auto;min-height:0"></div>
             </div>
-          </div>
+
+          </div><!-- /tasks-row -->
 
         </div><!-- /col-l -->
 
-        <!-- 우측 패널 -->
+        <!-- 우측 컬럼 -->
         <div class="col-r">
 
-          <!-- 진행도 바 차트 -->
-          <div class="card card-sm">
-            <div class="card-hd" style="margin-bottom:10px">
-              <div class="ctitle sm">전체 업무 진행도</div>
+          <!-- 진행도 (바 차트 + 도넛 + 칩) -->
+          <div class="card card-sm" id="stat-row-anchor">
+            <div class="card-hd" style="margin-bottom:8px">
+              <div class="ctitle sm">전체 진행도</div>
               <span class="pill pill-b" id="overallPct">0%</span>
             </div>
-            <canvas id="barChart"></canvas>
-            <div id="statusChips" style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"></div>
-          </div>
-
-          <!-- 도넛 차트 -->
-          <div class="card card-sm">
-            <div class="card-hd" style="margin-bottom:8px">
-              <div class="ctitle sm">완료율 현황</div>
-              <span class="gray-sm">전체 기준</span>
-            </div>
-            <div class="donut-wrap">
-              <canvas id="donutChart" width="240" height="240" style="width:120px;height:120px"></canvas>
-              <div class="donut-c">
-                <div class="donut-pct" id="donutPct">0%</div>
-                <div class="donut-lbl">완료</div>
+            <div class="two-charts">
+              <div class="bar-wrap"><canvas id="barChart"></canvas></div>
+              <div class="donut-wrap">
+                <canvas id="donutChart" width="120" height="120" style="width:60px;height:60px"></canvas>
+                <div class="donut-c">
+                  <div class="donut-pct" id="donutPct">0%</div>
+                  <div class="donut-lbl">완료</div>
+                </div>
               </div>
             </div>
-            <div class="dleg">
-              <span class="dld" style="background:#4A6CF7"></span>완료
-              <span class="dld" style="background:#06B6D4;margin-left:10px"></span>진행 중
-              <span class="dld" style="background:#E2E8F0;margin-left:10px"></span>대기
-            </div>
+            <div id="statusChips" class="chips-row"></div>
           </div>
 
           <!-- 집중 타이머 -->
           <div class="card card-sm tac" id="timer-sec">
-            <div class="card-hd" style="margin-bottom:10px">
+            <div class="card-hd" style="margin-bottom:8px">
               <div class="ctitle sm">⏱ 집중 타이머</div>
               <span class="pill pill-o" id="cyclePill">🍅 0사이클</span>
             </div>
@@ -189,11 +197,11 @@
 
           <!-- 퇴근 노트 -->
           <div class="card card-sm" id="note-sec">
-            <div class="card-hd" style="margin-bottom:8px">
+            <div class="card-hd" style="margin-bottom:6px">
               <div class="ctitle sm">📝 퇴근 노트</div>
               <span class="save-ok" id="saveBadge"></span>
             </div>
-            <textarea id="workNote" class="note-ta" rows="4"
+            <textarea id="workNote" class="note-ta" rows="3"
               placeholder="오늘 어디까지 진행했나요? 내일 이어서 해야 할 내용을 적어보세요."></textarea>
             <div class="note-row">
               <button class="btn-p" id="saveNoteBtn">💾 저장</button>
@@ -202,18 +210,20 @@
           </div>
 
           <!-- 어제 리마인드 -->
-          <div class="card card-sm" id="yesterday-sec">
-            <div class="ctitle sm" style="margin-bottom:10px">🔔 어제 업무 리마인드</div>
+          <div class="card card-sm" id="yday-sec">
+            <div class="ctitle sm" style="margin-bottom:8px">🔔 어제 업무 리마인드</div>
             <div id="yesterdayBox"></div>
-            <div id="recommendBox" style="margin-top:8px"></div>
+            <div id="recommendBox" style="margin-top:6px"></div>
           </div>
 
         </div><!-- /col-r -->
-      </div><!-- /g2 -->
+
+      </div><!-- /main-area -->
 
     </main>
-  </div>
-</div>
+  </div><!-- /main-wrap -->
+
+</div><!-- /layout -->
 <script src="script.js"></script>
 </body>
 </html>
