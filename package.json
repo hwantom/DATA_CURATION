@@ -1,0 +1,16 @@
+{
+  "name": "workboard-pro",
+  "version": "2.0.0",
+  "description": "업무 종합 대시보드 - WorkBoard Pro",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

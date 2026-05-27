@@ -1,4 +1,4 @@
-# 업무 종합 대시보드 (Work Dashboard)
+# WorkBoard Pro – 업무 종합 대시보드
 
 ## 제작자 정보
 
@@ -11,52 +11,77 @@
 
 ## 프로젝트 소개
 
-**업무 종합 대시보드**는 "컴퓨터를 켰을 때 가장 먼저 확인하는 개인 업무 종합 현황판"을 컨셉으로 제작된 HTML/CSS/JavaScript 기반 웹 대시보드입니다.
-
-회사원 또는 프로젝트 매니저가 하루 업무를 시작할 때 오늘 해야 할 일, 진행 중인 업무, 마감일, 어제 남긴 업무 메모를 한눈에 확인할 수 있도록 구성되었습니다.
-
----
-
-## 주요 기능
-
-### 기본 기능
-1. **상단 프로필 영역** – 이름·학번, 오늘 날짜, 실시간 시각, 업무 상태 메시지 표시
-2. **업무 D-Day 관리** – 마감일까지 남은 D-Day 자동 계산 (D-Day / D+n / D-n 표시), 중요도·진행 상태 시각적 구분
-3. **오늘의 업무** – 업무 추가·완료 체크·삭제, 완료율 실시간 계산, 완료 항목 취소선 처리
-4. **현재 업무 진행도** – 전체 진행률 프로그레스 바, 상태별(대기중/진행중/완료) 필터링, 업무 카드 보기
-5. **퇴근 전 업무 노트** – localStorage에 날짜별 저장, 새로고침 후에도 유지
-6. **어제 업무 리마인드** – 전날 저장한 노트를 다음 날 자동으로 표시
-7. **오늘의 업무 추천** – 어제 노트 내용을 참고 카드로 제공
-
-### 창의적 추가 기능
-8. **업무 집중 타이머** – 포모도로 스타일 타이머 (25분 집중 / 10분 휴식 / 5분 짧은 휴식), 완료 사이클 누적 표시
-9. **오늘의 우선순위 TOP 3** – 미완료 업무 상위 3개를 순위 배지로 시각화
-10. **오늘의 생산성 점수** – 업무 완료율(70점) + 타이머 사이클(최대 20점) + 노트 작성(10점) 합산 자동 계산
+**WorkBoard Pro**는 팀 협업 업무 종합 대시보드입니다.  
+Google OAuth 로그인, 실시간 채팅, 업무 분장, 결산 분석, 포스트잇 메모 등 다양한 기능을 **16:9 한 화면**에 통합하여 제공합니다.
 
 ---
 
-## 사용 기술
+## 주요 기능 (카드 12개)
+
+### 🔐 인증 & 팀 관리
+1. **Google OAuth 로그인** – Firebase Authentication 기반 Google 계정 로그인
+2. **팀장/팀원 역할 관리** – 팀 생성(팀장), 팀 참가(팀원, 코드 입력)
+3. **팀 업무 분장/공유** – 팀원에게 업무 배정, 실시간 상태 공유 (Firestore)
+
+### 📊 대시보드 카드
+4. **통계 카드 (4개)** – 전체/완료/진행중/긴급 업무 현황
+5. **주간 캘린더** – 일별 도넛 차트로 주간 업무 완료율 시각화
+6. **D-Day 관리** – 마감 임박 업무 D-Day 카운트다운
+7. **오늘의 업무** – 업무 추가/완료/삭제 + 진행률 바
+8. **우선순위 TOP 3** – 미완료 업무 자동 순위 표시
+
+### 💬 협업
+9. **업무용 SNS 채팅** – Slack 스타일 실시간 메시징 (1:1 + 단체 + 스레드)
+10. **포스트잇 메모** – 드래그 가능한 스티키 노트 (색상 6종)
+
+### 📈 분석 & 도구
+11. **결산 분석** – 일일/주간/월간/분기/연간 결산 (차트 + 히트맵)
+12. **집중 타이머** – 포모도로 타이머 (25/10/5분)
+13. **퇴근 노트** – localStorage 자동 저장
+14. **Google 캘린더** – 일정 동기화 위젯
+
+### 🎁 보너스
+15. **Gmail 자동 결산 발송** – 일일 결산 리포트 HTML 이메일
+16. **생산성 점수** – 업무 완료율 + 타이머 + 노트 기반 점수
+
+---
+
+## 기술 스택
 
 | 분류 | 기술 |
 |------|------|
-| 마크업 | HTML5 (Semantic Elements) |
-| 스타일 | CSS3 (CSS Custom Properties, Flexbox, Grid, Media Query) |
-| 동작 | Vanilla JavaScript (ES6+) |
-| 저장 | Web Storage API (localStorage) |
-| 외부 라이브러리 | 없음 (순수 HTML/CSS/JS) |
+| 프론트엔드 | HTML5, CSS3 (글래스모피즘), Vanilla JavaScript (ES6+) |
+| 폰트 | Google Fonts (Inter) |
+| 인증 | Firebase Authentication (Google OAuth) |
+| 데이터베이스 | Firebase Firestore (실시간 동기화) |
+| API | Gmail API, Google Calendar API |
+| 로컬 저장 | Web Storage API (localStorage) |
+| 서버 | Node.js + Express (Railway 배포) |
+| 디자인 | 글래스모피즘, 그라데이션, 마이크로 애니메이션 |
 
 ---
 
 ## 실행 방법
 
-1. `work-dashboard` 폴더를 다운로드하거나 압축 해제합니다.
-2. `index.html` 파일을 브라우저(Chrome, Edge 등)에서 엽니다.
-3. 별도의 서버 설정 없이 바로 실행됩니다.
+### 로컬 실행
+```bash
+cd work-dashboard
+npm install
+npm start
+# → http://localhost:3000
+```
 
-```
-work-dashboard/
-└── index.html  ← 이 파일을 브라우저로 열면 됩니다.
-```
+### Firebase 설정 (선택)
+1. [Firebase Console](https://console.firebase.google.com)에서 프로젝트 생성
+2. Authentication → Google 로그인 활성화
+3. Firestore Database 생성
+4. `firebase-config.js`에 프로젝트 설정 입력
+5. Firebase 미설정 시 **데모 모드**로 모든 기능 체험 가능
+
+### Railway 배포
+1. GitHub에 Push
+2. [Railway](https://railway.app)에서 GitHub 연동
+3. 자동 배포 (Node.js 감지)
 
 ---
 
@@ -64,21 +89,31 @@ work-dashboard/
 
 ```
 work-dashboard/
-├── index.html       # 메인 HTML 파일 (전체 레이아웃 및 섹션 구성)
-├── style.css        # 스타일시트 (반응형 디자인, 컴포넌트 스타일)
-├── script.js        # 자바스크립트 (모든 기능 구현, localStorage 연동)
-├── README.md        # 프로젝트 설명 문서
-└── github-link.txt  # GitHub 저장소 링크
+├── index.html          # 메인 HTML (로그인 + 대시보드 + 모달)
+├── style.css           # 프리미엄 디자인 시스템 (글래스모피즘)
+├── script.js           # 코어 로직 (모듈 통합 + 기존 기능)
+├── firebase-config.js  # Firebase SDK 초기화
+├── auth.js             # Google OAuth + 역할 관리
+├── team.js             # 팀 업무 CRUD + 실시간 동기화
+├── chat.js             # 실시간 SNS 채팅 (Slack 스타일)
+├── postit.js           # 드래그 가능 포스트잇 메모
+├── analytics.js        # 일일/주간/월간/분기/연간 결산
+├── gmail.js            # Gmail API 결산 이메일 발송
+├── calendar-sync.js    # Google Calendar 연동
+├── server.js           # Express 정적 서버 (Railway용)
+├── package.json        # Node.js 패키지 설정
+├── README.md           # 프로젝트 설명
+└── github-link.txt     # GitHub 링크
 ```
 
 ---
 
 ## 제출 안내
 
-- 제출 파일: `work-dashboard` 폴더 전체를 zip으로 압축하여 제출
-- GitHub 링크: `github-link.txt` 파일에 저장소 주소 기재
-- 최종 제출물: `[학번]_[이름]_대시보드.zip` 형식으로 압축 제출
+- GitHub 저장소: `github-link.txt` 참조
+- Railway 배포 URL: (배포 후 기재)
+- Firebase 미설정 시에도 **데모 모드**로 모든 기능 동작
 
 ---
 
-*본 프로젝트는 대학교 과제용으로 제작된 순수 HTML/CSS/JS 대시보드입니다.*
+*WorkBoard Pro – 팀 협업 업무 종합 대시보드 © 2024 민승환*

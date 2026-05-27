@@ -3,10 +3,100 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>업무 종합 대시보드 | 민승환</title>
+  <title>WorkBoard Pro – 업무 종합 대시보드</title>
+  <meta name="description" content="팀 협업 업무 종합 대시보드. Google 로그인, 실시간 채팅, 업무 분장, 결산 분석을 한 화면에서." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Google Identity Services (Gmail/Calendar) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+
+<!-- ════════════════════════════════════════════════
+     로그인 화면
+════════════════════════════════════════════════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-bg">
+    <div class="login-orb orb-1"></div>
+    <div class="login-orb orb-2"></div>
+    <div class="login-orb orb-3"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="login-logo-icon">⊞</span>
+      <span class="login-logo-text">WorkBoard<span class="login-pro">Pro</span></span>
+    </div>
+    <p class="login-subtitle">팀 협업 업무 종합 대시보드</p>
+    <p class="login-desc">Google 계정으로 로그인하고 팀과 함께 업무를 관리하세요.</p>
+    <button class="login-google-btn" id="googleLoginBtn">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      <span>Google 계정으로 로그인</span>
+    </button>
+    <button class="login-demo-btn" id="demoLoginBtn">
+      <span>🎮</span><span>데모 모드로 체험하기</span>
+    </button>
+    <p class="login-footer">Firebase 미설정 시 데모 모드를 이용하세요</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     팀 설정 모달
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="teamSetupModal" style="display:none">
+  <div class="modal-card">
+    <h2 class="modal-title">🏢 팀 설정</h2>
+    <p class="modal-desc">역할을 선택하고 팀을 설정하세요</p>
+
+    <div class="role-cards" id="roleCards">
+      <div class="role-card" data-role="admin">
+        <div class="role-icon">👑</div>
+        <div class="role-name">팀장</div>
+        <div class="role-desc">팀을 생성하고 업무를 배분합니다</div>
+      </div>
+      <div class="role-card" data-role="member">
+        <div class="role-icon">👤</div>
+        <div class="role-name">팀원</div>
+        <div class="role-desc">팀 코드로 참가합니다</div>
+      </div>
+    </div>
+
+    <!-- 팀장: 팀 생성 -->
+    <div class="team-form" id="createTeamForm" style="display:none">
+      <label class="form-label">팀 이름</label>
+      <input id="teamNameInput" class="form-input" placeholder="예: 마케팅팀" maxlength="30" />
+      <button class="btn-primary" id="createTeamBtn">팀 생성하기</button>
+    </div>
+
+    <!-- 팀원: 팀 참가 -->
+    <div class="team-form" id="joinTeamForm" style="display:none">
+      <label class="form-label">팀 코드</label>
+      <input id="teamCodeInput" class="form-input" placeholder="예: AB3K7Z" maxlength="6" style="text-transform:uppercase;letter-spacing:3px;text-align:center;font-size:20px" />
+      <button class="btn-primary" id="joinTeamBtn">팀 참가하기</button>
+    </div>
+
+    <!-- 결과 표시 -->
+    <div class="team-result" id="teamResult" style="display:none">
+      <div class="team-code-display" id="teamCodeDisplay"></div>
+      <button class="btn-primary" id="enterDashboardBtn">대시보드 입장 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     메인 대시보드
+════════════════════════════════════════════════ -->
+<div class="dashboard" id="dashboard" style="display:none">
 <div class="layout" id="layout">
 
   <!-- ══ 사이드바 ══ -->
@@ -14,7 +104,7 @@
     <div class="sb-top">
       <div class="sb-brand">
         <span class="sb-ic">⊞</span>
-        <span class="sb-bname">WorkBoard</span>
+        <span class="sb-bname">WorkBoard<span class="sb-pro">Pro</span></span>
       </div>
       <button class="sb-close" id="sbToggle" title="사이드바 접기">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -24,10 +114,11 @@
     </div>
 
     <div class="sb-profile">
-      <div class="sb-avatar">민</div>
+      <div class="sb-avatar" id="sbAvatar">민</div>
       <div class="sb-info">
-        <div class="sb-uname">민승환</div>
-        <div class="sb-usub">202101308</div>
+        <div class="sb-uname" id="sbUserName">민승환</div>
+        <div class="sb-usub" id="sbUserEmail">demo@workboard.pro</div>
+        <div class="sb-role-badge" id="sbRoleBadge">팀장</div>
         <div class="sb-stats">
           <div class="sb-stat"><span class="ss-v" id="sbTotal">–</span><span class="ss-l">전체</span></div>
           <div class="sb-divider"></div>
@@ -40,19 +131,33 @@
 
     <nav class="sb-nav">
       <p class="nav-label"><span class="nl-txt">메인</span></p>
-      <a class="nav-it active" data-target="stat-row"><span class="ni-ic">🏠</span><span class="ni-tx">대시보드</span></a>
-      <a class="nav-it" data-target="cal-sec">          <span class="ni-ic">📆</span><span class="ni-tx">주간 캘린더</span></a>
-      <a class="nav-it" data-target="dday-sec">         <span class="ni-ic">📅</span><span class="ni-tx">D-Day 관리</span></a>
-      <a class="nav-it" data-target="tasks-sec">        <span class="ni-ic">✅</span><span class="ni-tx">오늘의 업무</span></a>
-      <a class="nav-it" data-target="priority-sec">     <span class="ni-ic">🏆</span><span class="ni-tx">우선순위 TOP 3</span></a>
+      <a class="nav-it active" data-target="stat-row">       <span class="ni-ic">🏠</span><span class="ni-tx">대시보드</span></a>
+      <a class="nav-it" data-target="cal-sec">               <span class="ni-ic">📆</span><span class="ni-tx">월간 캘린더</span></a>
+      <a class="nav-it" data-target="dday-sec">              <span class="ni-ic">📅</span><span class="ni-tx">D-Day 관리</span></a>
+      <a class="nav-it" data-target="tasks-sec">             <span class="ni-ic">✅</span><span class="ni-tx">오늘의 업무</span></a>
+      <a class="nav-it" data-target="priority-sec">          <span class="ni-ic">🏆</span><span class="ni-tx">우선순위 TOP 3</span></a>
+      <p class="nav-label"><span class="nl-txt">협업</span></p>
+      <a class="nav-it" data-target="team-sec">              <span class="ni-ic">👥</span><span class="ni-tx">팀 업무 현황</span></a>
+      <a class="nav-it" data-target="chat-sec" id="chatNavItem">
+        <span class="ni-ic">💬</span><span class="ni-tx">채팅</span>
+        <span class="chat-badge" id="chatBadge" style="display:none">0</span>
+      </a>
+      <a class="nav-it" data-target="postit-sec">            <span class="ni-ic">📌</span><span class="ni-tx">포스트잇</span></a>
       <p class="nav-label"><span class="nl-txt">도구</span></p>
-      <a class="nav-it" data-target="timer-sec">        <span class="ni-ic">⏱</span><span class="ni-tx">집중 타이머</span></a>
-      <a class="nav-it" data-target="note-sec">         <span class="ni-ic">📝</span><span class="ni-tx">퇴근 노트</span></a>
-      <a class="nav-it" data-target="yday-sec">         <span class="ni-ic">🔔</span><span class="ni-tx">어제 리마인드</span></a>
+      <a class="nav-it" data-target="analytics-sec">         <span class="ni-ic">📊</span><span class="ni-tx">결산 분석</span></a>
+      <a class="nav-it" data-target="timer-sec">             <span class="ni-ic">⏱</span><span class="ni-tx">집중 타이머</span></a>
+      <a class="nav-it" data-target="note-sec">              <span class="ni-ic">📝</span><span class="ni-tx">퇴근 노트</span></a>
+      <a class="nav-it" data-target="gcal-sec">              <span class="ni-ic">🗓️</span><span class="ni-tx">Google 캘린더</span></a>
     </nav>
+
+    <div class="sb-bottom">
+      <button class="sb-logout-btn" id="logoutBtn" title="로그아웃">
+        <span class="ni-ic">🚪</span><span class="ni-tx">로그아웃</span>
+      </button>
+    </div>
   </aside>
 
-  <!-- ══ 메인 ══ -->
+  <!-- ══ 메인 콘텐츠 ══ -->
   <div class="main-wrap" id="mainWrap">
 
     <header class="topbar">
@@ -64,12 +169,16 @@
       <div class="tb-right">
         <div class="tb-clock" id="tbClock">00:00:00</div>
         <div class="prod-pill">생산성&nbsp;<strong id="prodScore">0</strong>점</div>
+        <div class="tb-team-badge" id="tbTeamBadge" title="팀 코드">
+          <span class="tb-team-icon">🏢</span>
+          <span class="tb-team-code" id="tbTeamCode">–</span>
+        </div>
       </div>
     </header>
 
     <main class="page">
 
-      <!-- ① 통계 카드 -->
+      <!-- ① 통계 카드 (4개) -->
       <div class="stat-row" id="stat-row">
         <div class="sc"><div class="sc-ic ic-b">📋</div><div class="sc-body"><div class="sc-v" id="stTotal">0</div><div class="sc-l">전체 업무</div></div><span class="sc-tag tag-n">업무 현황</span></div>
         <div class="sc"><div class="sc-ic ic-g">✅</div><div class="sc-body"><div class="sc-v" id="stDone">0</div><div class="sc-l">완료 업무</div></div><span class="sc-tag tag-u" id="doneBadge">0%</span></div>
@@ -83,22 +192,23 @@
         <!-- 좌측 컬럼 -->
         <div class="col-l">
 
-          <!-- 주간 캘린더 (도넛 차트 일별) -->
+          <!-- 월간 캘린더 -->
           <div class="card chart-card" id="cal-sec">
             <div class="card-hd">
               <div>
-                <div class="ctitle">📆 이번 주 업무 캘린더</div>
+                <div class="ctitle">📆 이번 달 업무 캘린더</div>
                 <div class="csub" id="calMonthLabel">–</div>
               </div>
               <div class="cal-nav">
-                <button class="cal-nav-btn" id="calPrev" title="이전 주">‹</button>
-                <span class="cal-week-txt" id="calWeekTxt">이번 주</span>
-                <button class="cal-nav-btn" id="calNext" title="다음 주">›</button>
+                <button class="cal-nav-btn" id="calPrev" title="이전 달">‹</button>
+                <span class="cal-week-txt" id="calWeekTxt">이번 달</span>
+                <button class="cal-nav-btn" id="calNext" title="다음 달">›</button>
               </div>
             </div>
-            <!-- 일별 도넛 차트 그리드 -->
+            <div class="cal-week-header">
+              <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span><span class="sun">일</span>
+            </div>
             <div class="cal-grid" id="calGrid"></div>
-            <!-- 범례 -->
             <div class="cal-legend">
               <span class="cl-dot" style="background:#EF4444"></span>~39%
               <span class="cl-dot" style="background:#F59E0B;margin-left:10px"></span>40~59%
@@ -125,7 +235,14 @@
               </div>
               <div class="pb-track" style="flex-shrink:0"><div class="pb-fill" id="todayBar" style="width:0%"></div></div>
               <div class="ti-row" style="flex-shrink:0">
-                <input id="taskInput" class="tinput" placeholder="새 업무 입력…" maxlength="60"/>
+                <select id="taskCategory" class="tselect">
+                  <option value="일반">일반</option>
+                  <option value="기획">기획</option>
+                  <option value="디자인">디자인</option>
+                  <option value="개발">개발</option>
+                  <option value="마케팅">마케팅</option>
+                </select>
+                <input id="taskInput" class="tinput" placeholder="새 업무 입력…" maxlength="60" />
                 <button class="btn-add" id="addTaskBtn">+</button>
               </div>
               <ul id="taskList" class="tlist"></ul>
@@ -138,8 +255,34 @@
               <div id="priorityList" style="flex:1;overflow-y:auto;min-height:0"></div>
             </div>
           </div>
-
         </div><!-- /col-l -->
+
+        <!-- 중앙 컬럼 -->
+        <div class="col-m">
+
+          <!-- 팀 업무 현황 -->
+          <div class="card flex-card" id="team-sec">
+            <div class="card-hd" style="flex-shrink:0">
+              <div class="ctitle">👥 팀 업무 현황</div>
+              <button class="btn-sm" id="addTeamTaskBtn" title="업무 추가">+ 업무 추가</button>
+            </div>
+            <div id="teamTaskList" class="team-task-list" style="flex:1;overflow-y:auto;min-height:0"></div>
+          </div>
+
+          <!-- 채팅 -->
+          <div class="card flex-card chat-card" id="chat-sec">
+            <div class="card-hd" style="flex-shrink:0">
+              <div class="ctitle">💬 팀 채팅</div>
+              <div class="chat-channel-tabs" id="chatChannelTabs"></div>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-row" style="flex-shrink:0">
+              <input id="chatInput" class="chat-input" placeholder="메시지를 입력하세요..." maxlength="500" />
+              <button class="chat-send-btn" id="chatSendBtn">전송</button>
+            </div>
+          </div>
+
+        </div><!-- /col-m -->
 
         <!-- 우측 컬럼 -->
         <div class="col-r">
@@ -161,6 +304,22 @@
               </div>
             </div>
             <div id="statusChips" class="chips-row"></div>
+          </div>
+
+          <!-- 포스트잇 보드 -->
+          <div class="card card-sm postit-card" id="postit-sec">
+            <div class="card-hd" style="margin-bottom:6px">
+              <div class="ctitle sm">📌 포스트잇 메모</div>
+            </div>
+            <div class="postit-board" id="postitBoard"></div>
+          </div>
+
+          <!-- 결산 분석 -->
+          <div class="card card-sm" id="analytics-sec">
+            <div class="card-hd" style="margin-bottom:6px">
+              <div class="ctitle sm">📊 결산 분석</div>
+            </div>
+            <div id="analyticsContainer"></div>
           </div>
 
           <!-- 집중 타이머 -->
@@ -194,14 +353,17 @@
             <div class="note-row">
               <button class="btn-p" id="saveNoteBtn">💾 저장</button>
               <button class="btn-g" id="clearNoteBtn">🗑 초기화</button>
+              <button class="btn-email" id="emailReportBtn" title="일일 결산 이메일 발송">📧 결산 발송</button>
             </div>
           </div>
 
-          <!-- 어제 리마인드 -->
-          <div class="card card-sm" id="yday-sec">
-            <div class="ctitle sm" style="margin-bottom:8px">🔔 어제 업무 리마인드</div>
-            <div id="yesterdayBox"></div>
-            <div id="recommendBox" style="margin-top:6px"></div>
+          <!-- Google 캘린더 -->
+          <div class="card card-sm" id="gcal-sec">
+            <div class="card-hd" style="margin-bottom:8px">
+              <div class="ctitle sm">🗓️ Google 캘린더</div>
+              <button class="btn-sm" id="syncCalBtn">🔄 동기화</button>
+            </div>
+            <div id="gcalEvents"></div>
           </div>
 
         </div><!-- /col-r -->
@@ -213,7 +375,60 @@
   <!-- 모바일 오버레이 -->
   <div class="sb-overlay" id="sbOverlay"></div>
 
+  <!-- 카드 포커스 오버레이 -->
+  <div class="focus-overlay" id="focusOverlay"></div>
+
 </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     업무 추가 모달
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="addTaskModal" style="display:none">
+  <div class="modal-card modal-sm">
+    <h2 class="modal-title">➕ 새 업무 추가</h2>
+    <div class="form-group">
+      <label class="form-label">업무 제목</label>
+      <input id="modalTaskTitle" class="form-input" placeholder="업무 제목 입력" maxlength="60" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">설명 (선택)</label>
+      <textarea id="modalTaskDesc" class="form-input form-textarea" placeholder="상세 설명" rows="2"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">담당자</label>
+        <select id="modalTaskAssignee" class="form-select"></select>
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label">우선순위</label>
+        <select id="modalTaskPriority" class="form-select">
+          <option value="high">🔴 높음</option>
+          <option value="medium" selected>🟡 보통</option>
+          <option value="low">🟢 낮음</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">마감일</label>
+      <input id="modalTaskDeadline" type="date" class="form-input" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="cancelTaskModalBtn">취소</button>
+      <button class="btn-primary" id="confirmAddTaskBtn">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- 스크립트 로드 순서 -->
+<script src="firebase-config.js"></script>
+<script src="auth.js"></script>
+<script src="team.js"></script>
+<script src="chat.js"></script>
+<script src="postit.js"></script>
+<script src="analytics.js"></script>
+<script src="gmail.js"></script>
+<script src="calendar-sync.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
