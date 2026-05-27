@@ -403,15 +403,15 @@ body {
 /* 3단 그리드 */
 .main-area { flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr 280px; gap:var(--gap); }
 
-.col-l { display:flex; flex-direction:column; gap:var(--gap); min-height:0; overflow:hidden; }
-.col-m { display:flex; flex-direction:column; gap:var(--gap); min-height:0; overflow:hidden; }
-.col-r { display:flex; flex-direction:column; gap:var(--gap); min-height:0; overflow-y:auto; }
-.col-r::-webkit-scrollbar { width:4px; }
-.col-r::-webkit-scrollbar-thumb { background:var(--g3); border-radius:2px; }
+.col-l { display:flex; flex-direction:column; gap:var(--gap); min-height:0; overflow-y:auto; padding-right:2px; }
+.col-m { display:flex; flex-direction:column; gap:var(--gap); min-height:0; overflow-y:auto; padding-right:2px; }
+.col-r { display:flex; flex-direction:column; gap:var(--gap); min-height:0; overflow-y:auto; padding-right:2px; }
+.col-l::-webkit-scrollbar, .col-m::-webkit-scrollbar, .col-r::-webkit-scrollbar { width:4px; }
+.col-l::-webkit-scrollbar-thumb, .col-m::-webkit-scrollbar-thumb, .col-r::-webkit-scrollbar-thumb { background:var(--g3); border-radius:2px; }
 
 .chart-card { flex-shrink:0; }
 .dday-card  { flex-shrink:0; }
-.tasks-row { flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); }
+.tasks-row { display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); flex-shrink:0; min-height:280px; }
 
 /* 카드 */
 .card {
@@ -548,6 +548,7 @@ body {
 /* ══════════════════════════════════════
    팀 업무 현황
 ══════════════════════════════════════ */
+#team-sec { flex-shrink:0; min-height: 260px; }
 .team-task-list { display:flex; flex-direction:column; gap:6px; }
 .team-task-item {
   display:flex; align-items:center; gap:10px;
@@ -577,7 +578,7 @@ body {
 /* ══════════════════════════════════════
    채팅
 ══════════════════════════════════════ */
-.chat-card { min-height: 240px; }
+.chat-card { min-height: 320px; flex-shrink:0; }
 .chat-channel-tabs { display:flex; gap:4px; overflow-x:auto; }
 .chat-channel-tab {
   padding:4px 10px; border-radius:6px; border:1px solid var(--g3);
